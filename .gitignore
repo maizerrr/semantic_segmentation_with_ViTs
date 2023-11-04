@@ -4,7 +4,7 @@ checkpoints
 .vscode
 *.pyc
 .idea/
-__pycache__
+*/__pycache__
 results
 checkpoints_bak
 cityscapes

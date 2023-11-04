@@ -295,6 +295,25 @@ class ExtToTensor(object):
     def __repr__(self):
         return self.__class__.__name__ + '()'
 
+class ExtFromTensor(object):
+    """Convert a ``PyTorch tensor`` to ``numpy.ndarray``.
+    Converts a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0]
+    to a numpy.ndarray of shape (H x W x C) in the range [0.0, 1.0].
+    """
+    def __call__(self, pic, lbl):
+        """
+        Note that labels will not be normalized to [0, 1].
+        Args:
+            pic (PIL Image or numpy.ndarray): Image to be converted to tensor.
+            lbl (PIL Image or numpy.ndarray): Label to be converted to tensor.
+        Returns:
+            Tensor: Converted image and label
+        """
+        return pic.permute(1,2,0).cpu().detach().numpy(), lbl.cpu().detach().numpy()
+
+    def __repr__(self):
+        return self.__class__.__name__ + '()'
+
 class ExtNormalize(object):
     """Normalize a tensor image with mean and standard deviation.
     Given mean: ``(M1,...,Mn)`` and std: ``(S1,..,Sn)`` for ``n`` channels, this transform
@@ -409,7 +428,7 @@ class ExtResize(object):
     """
 
     def __init__(self, size, interpolation=Image.BILINEAR):
-        assert isinstance(size, int) or (isinstance(size, collections.Iterable) and len(size) == 2)
+        assert isinstance(size, int) or (isinstance(size, collections.abc.Iterable) and len(size) == 2)
         self.size = size
         self.interpolation = interpolation
 

@@ -6,6 +6,12 @@ from .backbone import (
     hrnetv2,
     xception
 )
+from .Segmenter import factory as segmenter
+from .SwinDeepLab.swin_deeplab import SwinDeepLab
+from .SwinDeepLab.configs.swin_224_7_4level import EncoderConfig, ASPPConfig, DecoderConfig
+
+import os
+import torch
 
 def _segm_hrnet(name, backbone_name, num_classes, pretrained_backbone):
 
@@ -220,3 +226,34 @@ def deeplabv3plus_xception(num_classes=21, output_stride=8, pretrained_backbone=
         pretrained_backbone (bool): If True, use the pretrained backbone.
     """
     return _load_model('deeplabv3plus', 'xception', num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
+
+def segmenter_vit(num_classes=21, output_stride=None, pretrained_backbone=True):
+    model_cfg = {
+        'backbone': 'vit_large_patch16_384',
+        'pretrained_backbone': pretrained_backbone,
+        'd_model': 1024,
+        'decoder': {
+            'drop_path_rate': 0.0,
+            'dropout': 0.1,
+            'n_cls': num_classes,
+            'n_layers': 1,
+            'name': 'mask_transformer'
+        },
+        'drop_path_rate': 0.1,
+        'dropout': 0.0,
+        'image_size': (768,768),
+        'n_cls': num_classes,
+        'n_heads': 16,
+        'n_layers': 24,
+        'normalization': 'vit',
+        'patch_size': 16
+    }
+    model = segmenter.create_segmenter(model_cfg)
+    return model
+
+def swin_deep_lab(num_classes=21, output_stride=8, pretrained_backbone=True):
+    EncoderConfig.img_size = 768
+    DecoderConfig.window_size = EncoderConfig.window_size = EncoderConfig.img_size // 32
+    EncoderConfig.load_pretrained = pretrained_backbone
+    DecoderConfig.num_classes = num_classes
+    return SwinDeepLab(EncoderConfig, ASPPConfig, DecoderConfig)

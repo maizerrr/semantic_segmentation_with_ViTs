@@ -1,7 +1,7 @@
 from tqdm import tqdm
 import network
 import utils
-import os
+import os, multiprocessing
 import random
 import argparse
 import numpy as np
@@ -13,6 +13,7 @@ from metrics import StreamSegMetrics
 
 import torch
 import torch.nn as nn
+from torch.cuda.amp import GradScaler
 from utils.visualizer import Visualizer
 
 from PIL import Image
@@ -66,7 +67,7 @@ def get_argparser():
     parser.add_argument("--continue_training", action='store_true', default=False)
 
     parser.add_argument("--loss_type", type=str, default='cross_entropy',
-                        choices=['cross_entropy', 'focal_loss'], help="loss type (default: False)")
+                        choices=['cross_entropy', 'focal_loss', 'mixed'], help="loss type (default: False)")
     parser.add_argument("--gpu_id", type=str, default='0',
                         help="GPU ID")
     parser.add_argument("--weight_decay", type=float, default=1e-4,
@@ -79,6 +80,10 @@ def get_argparser():
                         help="epoch interval for eval (default: 100)")
     parser.add_argument("--download", action='store_true', default=False,
                         help="download datasets")
+    parser.add_argument("--use_amp", action='store_true', default=False, 
+                        help="use auto mixed precision to save ram (default: False)")
+    parser.add_argument("--all_weights", action='store_true', default=False, 
+                        help="use same lr for all trainable params, otherwise, 0.1 * lr for backbone (default: False)")
 
     # PASCAL VOC Options
     parser.add_argument("--year", type=str, default='2012',
@@ -139,12 +144,22 @@ def get_dataset(opts):
                             std=[0.229, 0.224, 0.225]),
         ])
 
-        val_transform = et.ExtCompose([
-            # et.ExtResize( 512 ),
-            et.ExtToTensor(),
-            et.ExtNormalize(mean=[0.485, 0.456, 0.406],
-                            std=[0.229, 0.224, 0.225]),
-        ])
+        if opts.crop_val:
+            val_transform = et.ExtCompose([
+                # et.ExtResize( 512 ),
+                et.ExtResize(opts.crop_size),
+                et.ExtCenterCrop(opts.crop_size),
+                et.ExtToTensor(),
+                et.ExtNormalize(mean=[0.485, 0.456, 0.406],
+                                std=[0.229, 0.224, 0.225]),
+            ])
+        else:
+            val_transform = et.ExtCompose([
+                # et.ExtResize( 512 ),
+                et.ExtToTensor(),
+                et.ExtNormalize(mean=[0.485, 0.456, 0.406],
+                                std=[0.229, 0.224, 0.225]),
+            ])
 
         train_dst = Cityscapes(root=opts.data_root,
                                split='train', transform=train_transform)
@@ -152,6 +167,20 @@ def get_dataset(opts):
                              split='val', transform=val_transform)
     return train_dst, val_dst
 
+def train(opts, model, images, labels, optimizer, scaler, criterion, device):
+    x = images.to(device, dtype=torch.float32)
+    y = labels.to(device, dtype=torch.long)
+
+    optimizer.zero_grad()
+    with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=opts.use_amp):
+        outputs = model(x)
+        loss = criterion(outputs, y)
+    scaler.scale(loss).backward()
+    scaler.step(optimizer)
+    scaler.update()
+
+    np_loss = loss.detach().cpu().numpy()
+    return np_loss
 
 def validate(opts, model, loader, device, metrics, ret_samples_ids=None):
     """Do validation and return specified samples"""
@@ -168,11 +197,13 @@ def validate(opts, model, loader, device, metrics, ret_samples_ids=None):
         for i, (images, labels) in tqdm(enumerate(loader)):
 
             images = images.to(device, dtype=torch.float32)
-            labels = labels.to(device, dtype=torch.long)
+            # labels = labels.to(device, dtype=torch.long)
 
-            outputs = model(images)
+            with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=opts.use_amp):
+                outputs = model(images)
             preds = outputs.detach().max(dim=1)[1].cpu().numpy()
-            targets = labels.cpu().numpy()
+            # targets = labels.cpu().numpy()
+            targets = labels.numpy()
 
             metrics.update(targets, preds)
             if ret_samples_ids is not None and i in ret_samples_ids:  # get vis samples
@@ -234,42 +265,51 @@ def main():
     if opts.dataset == 'voc' and not opts.crop_val:
         opts.val_batch_size = 1
 
+    num_workers = multiprocessing.cpu_count()
     train_dst, val_dst = get_dataset(opts)
     train_loader = data.DataLoader(
-        train_dst, batch_size=opts.batch_size, shuffle=True, num_workers=2,
+        train_dst, batch_size=opts.batch_size, shuffle=True, num_workers=num_workers,
         drop_last=True)  # drop_last=True to ignore single-image batches.
     val_loader = data.DataLoader(
-        val_dst, batch_size=opts.val_batch_size, shuffle=True, num_workers=2)
+        val_dst, batch_size=opts.val_batch_size, shuffle=True, num_workers=num_workers)
     print("Dataset: %s, Train set: %d, Val set: %d" %
           (opts.dataset, len(train_dst), len(val_dst)))
 
     # Set up model (all models are 'constructed at network.modeling)
     model = network.modeling.__dict__[opts.model](num_classes=opts.num_classes, output_stride=opts.output_stride)
+    backbone, classifier = model._modules.keys()
     if opts.separable_conv and 'plus' in opts.model:
-        network.convert_to_separable_conv(model.classifier)
-    utils.set_bn_momentum(model.backbone, momentum=0.01)
+        network.convert_to_separable_conv(model._modules[classifier])
+    utils.set_bn_momentum(model._modules[backbone], momentum=0.01)
 
     # Set up metrics
     metrics = StreamSegMetrics(opts.num_classes)
 
     # Set up optimizer
-    optimizer = torch.optim.SGD(params=[
-        {'params': model.backbone.parameters(), 'lr': 0.1 * opts.lr},
-        {'params': model.classifier.parameters(), 'lr': opts.lr},
-    ], lr=opts.lr, momentum=0.9, weight_decay=opts.weight_decay)
+    if opts.all_weights:
+        optimizer = torch.optim.SGD(params=model.parameters(), lr=opts.lr, momentum=0.9, weight_decay=opts.weight_decay)
+    else:
+        optimizer = torch.optim.SGD(params=[
+            {'params': model._modules[backbone].parameters(), 'lr': 0.1 * opts.lr},
+            {'params': model._modules[classifier].parameters(), 'lr': opts.lr},
+        ], lr=opts.lr, momentum=0.9, weight_decay=opts.weight_decay)
     # optimizer = torch.optim.SGD(params=model.parameters(), lr=opts.lr, momentum=0.9, weight_decay=opts.weight_decay)
     # torch.optim.lr_scheduler.StepLR(optimizer, step_size=opts.lr_decay_step, gamma=opts.lr_decay_factor)
     if opts.lr_policy == 'poly':
-        scheduler = utils.PolyLR(optimizer, opts.total_itrs, power=0.9)
+        scheduler = utils.PolyLR(optimizer, opts.total_itrs, power=0.9, warmup_iters=opts.total_iters//100)
     elif opts.lr_policy == 'step':
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=opts.step_size, gamma=0.1)
 
     # Set up criterion
     # criterion = utils.get_loss(opts.loss_type)
+    f_loss = utils.FocalLoss(ignore_index=255, size_average=True)
+    ce_loss = nn.CrossEntropyLoss(ignore_index=255, reduction='mean')
     if opts.loss_type == 'focal_loss':
-        criterion = utils.FocalLoss(ignore_index=255, size_average=True)
+        criterion = f_loss
     elif opts.loss_type == 'cross_entropy':
-        criterion = nn.CrossEntropyLoss(ignore_index=255, reduction='mean')
+        criterion = ce_loss
+    elif opts.loss_type == 'mixed':
+        criterion = lambda pred,gold : 0.5 * f_loss(pred,gold) + 0.5 * ce_loss(pred,gold)
 
     def save_ckpt(path):
         """ save current model
@@ -319,24 +359,19 @@ def main():
         print(metrics.to_str(val_score))
         return
 
+    # auto mixed precision
+    scaler = GradScaler(enabled=opts.use_amp)
+
     interval_loss = 0
     while True:  # cur_itrs < opts.total_itrs:
+
         # =====  Train  =====
         model.train()
         cur_epochs += 1
         for (images, labels) in train_loader:
             cur_itrs += 1
 
-            images = images.to(device, dtype=torch.float32)
-            labels = labels.to(device, dtype=torch.long)
-
-            optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-            np_loss = loss.detach().cpu().numpy()
+            np_loss = train(opts, model, images, labels, optimizer, scaler, criterion, device)
             interval_loss += np_loss
             if vis is not None:
                 vis.vis_scalar('Loss', cur_itrs, np_loss)
@@ -352,9 +387,11 @@ def main():
                           (opts.model, opts.dataset, opts.output_stride))
                 print("validation...")
                 model.eval()
+                torch.cuda.empty_cache()
                 val_score, ret_samples = validate(
                     opts=opts, model=model, loader=val_loader, device=device, metrics=metrics,
                     ret_samples_ids=vis_sample_id)
+                torch.cuda.empty_cache()
                 print(metrics.to_str(val_score))
                 if val_score['Mean IoU'] > best_score:  # save best model
                     best_score = val_score['Mean IoU']
