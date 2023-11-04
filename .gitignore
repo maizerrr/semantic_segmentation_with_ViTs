@@ -5,6 +5,7 @@ checkpoints
 *.pyc
 .idea/
 */__pycache__
+*ipynb_checkpoints/
 results
 checkpoints_bak
 cityscapes

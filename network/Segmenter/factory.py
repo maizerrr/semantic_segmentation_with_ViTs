@@ -9,11 +9,13 @@ from timm.models.helpers import load_pretrained, load_custom_pretrained
 from timm.models.vision_transformer import default_cfgs
 
 from .vit import VisionTransformer
-from .util import checkpoint_filter_fn, download_pretrained
+from .util import checkpoint_filter_fn
 from .decoder import DecoderLinear
 from .decoder import MaskTransformer
 from .segmenter import Segmenter
 from .utils import torch as ptu
+
+from utils.utils import download_pretrained
 
 
 def create_vit(model_cfg):

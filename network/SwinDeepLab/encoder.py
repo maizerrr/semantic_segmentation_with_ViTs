@@ -8,7 +8,7 @@ from .backbones.swin import SwinEncoder
 from .backbones.xception import AlignedXception
 from .backbones.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 
-
+from utils.utils import download_pretrained
 
 def build_encoder(config):
     if config.encoder_name == 'swin':
@@ -44,9 +44,11 @@ def build_encoder(config):
         if config.load_pretrained:
             path = torch.hub.get_dir() + "/checkpoints/"
             file = "swin_tiny_patch4_window7_224.pth"
-            url = ""
+            url = "https://github.com/maizerrr/semantic_segmentation_with_ViTs/releases/download/untagged-1f7e5dd85d0510f02701/swin_tiny_patch4_window7_224.pth"
             download_pretrained(url, path, filename=file)
             encoder.load_from(path+file)
+
+        return encoder
         
     if config.encoder_name == 'xception':
         if config.sync_bn:
@@ -79,25 +81,3 @@ def build_encoder(config):
         model.low_level_dim = 128
         
         return model
-        
-def download_pretrained(url, dir, filename=None):
-    # Check if file already exists
-    if filename is None:
-        filename = os.path.basename(url)
-    if os.path.exists(dir+filename):
-        return
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-
-    # Create a URL opener that skips SSL check
-    opener = urllib.request.build_opener()
-    opener.add_handler(urllib.request.HTTPSHandler(context=ssl._create_unverified_context()))
-
-    # Download the file
-    with opener.open(url) as response:
-        file_contents = response.read()
-
-    # Save the file to the specified directory
-    save_path = os.path.join(dir, filename)
-    with open(save_path, 'wb') as out_file:
-        out_file.write(file_contents)
