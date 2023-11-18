@@ -8,7 +8,7 @@ from .backbones.swin import SwinEncoder
 from .backbones.xception import AlignedXception
 from .backbones.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 
-from utils.utils import download_pretrained
+from ..utils import download_pretrained
 
 def build_encoder(config):
     if config.encoder_name == 'swin':

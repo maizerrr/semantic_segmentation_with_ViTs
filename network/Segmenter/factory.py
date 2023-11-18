@@ -15,7 +15,7 @@ from .decoder import MaskTransformer
 from .segmenter import Segmenter
 from .utils import torch as ptu
 
-from utils.utils import download_pretrained
+from ..utils import download_pretrained
 
 
 def create_vit(model_cfg):

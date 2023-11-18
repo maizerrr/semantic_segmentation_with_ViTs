@@ -47,8 +47,12 @@ def get_argparser():
     parser.add_argument("--test_only", action='store_true', default=False)
     parser.add_argument("--save_val_results", action='store_true', default=False,
                         help="save segmentation results to \"./results\"")
+    parser.add_argument("--total_epochs", type=int, default=100,
+                        help="epoch number (default: 100)")
+    parser.add_argument("--base_lr", type=float, default=0.01,
+                        help="actual lr = base lr * batch size / 16 (default: 0.01)")
     parser.add_argument("--total_itrs", type=int, default=30e3,
-                        help="epoch number (default: 30k)")
+                        help="iteration number (default: 30k)")
     parser.add_argument("--lr", type=float, default=0.01,
                         help="learning rate (default: 0.01)")
     parser.add_argument("--lr_policy", type=str, default='poly', choices=['poly', 'step'],
@@ -245,6 +249,8 @@ def main():
         opts.num_classes = 21
     elif opts.dataset.lower() == 'cityscapes':
         opts.num_classes = 19
+    if opts.base_lr is not None:
+        opts.lr = opts.base_lr * opts.batch_size / 16.0
 
     # Setup visualization
     vis = Visualizer(port=opts.vis_port,
@@ -274,6 +280,9 @@ def main():
         val_dst, batch_size=opts.val_batch_size, shuffle=True, num_workers=num_workers)
     print("Dataset: %s, Train set: %d, Val set: %d" %
           (opts.dataset, len(train_dst), len(val_dst)))
+    if opts.total_epochs is not None:
+        opts.total_itrs = opts.total_epochs * len(train_dst) // opts.batch_size
+        opts.val_interval = len(train_dst) // opts.batch_size
 
     # Set up model (all models are 'constructed at network.modeling)
     model = network.modeling.__dict__[opts.model](num_classes=opts.num_classes, output_stride=opts.output_stride)
@@ -338,6 +347,7 @@ def main():
             optimizer.load_state_dict(checkpoint["optimizer_state"])
             scheduler.load_state_dict(checkpoint["scheduler_state"])
             cur_itrs = checkpoint["cur_itrs"]
+            cur_epochs = cur_itrs * opts.batch_size // len(train_dst)
             best_score = checkpoint['best_score']
             print("Training state restored from %s" % opts.ckpt)
         print("Model restored from %s" % opts.ckpt)
@@ -376,8 +386,9 @@ def main():
             if vis is not None:
                 vis.vis_scalar('Loss', cur_itrs, np_loss)
 
-            if (cur_itrs) % 10 == 0:
-                interval_loss = interval_loss / 10
+            print_interval = opts.val_interval // 10
+            if (cur_itrs) % print_interval == 0:
+                interval_loss = interval_loss / print_interval
                 print("Epoch %d, Itrs %d/%d, Loss=%f" %
                       (cur_epochs, cur_itrs, opts.total_itrs, interval_loss))
                 interval_loss = 0.0

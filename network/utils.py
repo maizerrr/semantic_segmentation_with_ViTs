@@ -4,6 +4,9 @@ import numpy as np
 import torch.nn.functional as F
 from collections import OrderedDict
 
+import os, ssl
+import urllib.request
+
 class _SimpleSegmentationModel(nn.Module):
     def __init__(self, backbone, classifier):
         super(_SimpleSegmentationModel, self).__init__()
@@ -91,3 +94,28 @@ class IntermediateLayerGetter(nn.ModuleDict):
                 else:
                     out[out_name] = x
         return out
+
+def download_pretrained(url, dir, filename=None):
+    # Check if file already exists
+    if filename is None:
+        filename = os.path.basename(url)
+    if os.path.exists(dir+filename):
+        return
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+    try:
+        # Create a URL opener that skips SSL check
+        opener = urllib.request.build_opener()
+        opener.add_handler(urllib.request.HTTPSHandler(context=ssl._create_unverified_context()))
+
+        # Download the file
+        with opener.open(url) as response:
+            file_contents = response.read()
+    except Exception:
+        raise RuntimeError(f"Failed to download pretrained weights, please manually download it from {url} and save it as {dir+filename}")
+
+    # Save the file to the specified directory
+    save_path = os.path.join(dir, filename)
+    with open(save_path, 'wb') as out_file:
+        out_file.write(file_contents)

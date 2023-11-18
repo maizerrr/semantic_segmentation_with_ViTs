@@ -9,6 +9,7 @@ from .backbone import (
 from .Segmenter import factory as segmenter
 from .SwinDeepLab.swin_deeplab import SwinDeepLab
 from .SwinDeepLab.configs.swin_224_7_4level import EncoderConfig, ASPPConfig, DecoderConfig
+from .MaeSegmenter.mae_segmenter import mae_segmenter
 
 import os
 import torch
@@ -281,3 +282,6 @@ def swindeeplab_swin_t(num_classes=21, output_stride=8, pretrained_backbone=True
     EncoderConfig.load_pretrained = pretrained_backbone
     DecoderConfig.num_classes = num_classes
     return SwinDeepLab(EncoderConfig, ASPPConfig, DecoderConfig)
+
+def mae_segmenter_vit_base(num_classes=21, output_stride=8, pretrained_backbone=True):
+    return mae_segmenter(num_classes=num_classes, pretrained=pretrained_backbone)
