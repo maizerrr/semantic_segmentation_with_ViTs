@@ -29,7 +29,11 @@ class LinearDecoder(nn.Module):
         x = self.head(x)
         return x.permute(0, 3, 1, 2)
     
-def mae_segmenter(num_classes, pretrained, backbone='samvit_base_patch16'):
+def mae_segmenter(num_classes, pretrained, backbone='samvit_base_patch16', decoder_type='linear'):
     encoder = timm.create_model(backbone, pretrained=pretrained)
     decoder = LinearDecoder(num_classes, encoder.num_features)
+    if decoder_type == 'deconv':
+        raise NotImplementedError
+    elif decoder_type == 'mask':
+        raise NotImplementedError
     return MaeSegmenter(encoder, decoder)

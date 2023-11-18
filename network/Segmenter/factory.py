@@ -43,7 +43,7 @@ def create_vit(model_cfg):
     if pretrained and backbone == "vit_base_patch8_384":
         path = torch.hub.get_dir() + "/checkpoints/"
         file = backbone + ".pth"
-        url = ""
+        url = "https://github.com/maizerrr/semantic_segmentation_with_ViTs/releases/download/v1.0.0/vit_base_patch8_384.pth"
         download_pretrained(url, path, filename=file)
         state_dict = torch.load(path+file, map_location="cpu")
         filtered_dict = checkpoint_filter_fn(state_dict, model)

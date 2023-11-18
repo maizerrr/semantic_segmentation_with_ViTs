@@ -260,7 +260,7 @@ class AlignedXception(nn.Module):
 
 
     def _load_pretrained_model(self):
-        pretrain_dict = model_zoo.load_url('http://data.lip6.fr/cadene/pretrainedmodels/xception-b5690688.pth')
+        pretrain_dict = model_zoo.load_url('https://github.com/maizerrr/semantic_segmentation_with_ViTs/releases/download/v1.0.0/xception-43020ad28.pth')
         model_dict = {}
         state_dict = self.state_dict()
 

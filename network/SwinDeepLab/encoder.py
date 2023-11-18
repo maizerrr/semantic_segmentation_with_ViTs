@@ -44,7 +44,7 @@ def build_encoder(config):
         if config.load_pretrained:
             path = torch.hub.get_dir() + "/checkpoints/"
             file = "swin_tiny_patch4_window7_224.pth"
-            url = "https://github.com/maizerrr/semantic_segmentation_with_ViTs/releases/download/untagged-1f7e5dd85d0510f02701/swin_tiny_patch4_window7_224.pth"
+            url = "https://github.com/maizerrr/semantic_segmentation_with_ViTs/releases/download/v1.0.0/swin_tiny_patch4_window7_224.pth"
             download_pretrained(url, path, filename=file)
             encoder.load_from(path+file)
 

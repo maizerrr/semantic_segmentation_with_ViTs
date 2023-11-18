@@ -285,3 +285,6 @@ def swindeeplab_swin_t(num_classes=21, output_stride=8, pretrained_backbone=True
 
 def mae_segmenter_vit_base(num_classes=21, output_stride=8, pretrained_backbone=True):
     return mae_segmenter(num_classes=num_classes, pretrained=pretrained_backbone)
+
+def mae_segmenter_vit_huge(num_classes=21, output_stride=8, pretrained_backbone=True):
+    return mae_segmenter(num_classes=num_classes, pretrained=pretrained_backbone, backbone='samvit_huge_patch16')
