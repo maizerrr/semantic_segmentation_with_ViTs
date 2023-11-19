@@ -49,8 +49,8 @@ def get_argparser():
                         help="save segmentation results to \"./results\"")
     parser.add_argument("--total_epochs", type=int, default=100,
                         help="epoch number (default: 100)")
-    parser.add_argument("--base_lr", type=float, default=0.01,
-                        help="actual lr = base lr * batch size / 16 (default: 0.01)")
+    parser.add_argument("--base_lr", type=float, default=0.1,
+                        help="actual lr = base lr * batch size / 16 (default: 0.1)")
     parser.add_argument("--total_itrs", type=int, default=30e3,
                         help="iteration number (default: 30k)")
     parser.add_argument("--lr", type=float, default=0.01,
