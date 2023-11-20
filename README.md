@@ -79,7 +79,7 @@ validation: 1024x2048
 |:-----:|:-----:|:-----:|:-----:|:-----:|
 | DeepLabV3Plus-MobileNet | 16 | 5.23M | ? | ? |
 | DeepLabV3Plus-Xception | 16 | 30.05M | 45 | ? |
-| DeepLabV3Plus-ResNet101 | 16 | 58.75M | 17 | ? |
+| DeepLabV3Plus-ResNet101 | 16 | 58.75M | 15 | 76.1% |
 | TransDeepLab-SwinT | 16 | ? | ? | ? |
 | Segmenter-ViT_Base | 16 | ? | 5 | 76.1% |
 | MaeSegmenter-ViT_Base | 16 | 86.44M | 3 | 75.3% |
