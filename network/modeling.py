@@ -228,7 +228,7 @@ def deeplabv3plus_xception(num_classes=21, output_stride=8, pretrained_backbone=
     """
     return _load_model('deeplabv3plus', 'xception', num_classes, output_stride=output_stride, pretrained_backbone=pretrained_backbone)
 
-def segmenter_vit_base(num_classes=21, output_stride=None, pretrained_backbone=True):
+def segmenter_vit_large(num_classes=21, output_stride=8, pretrained_backbone=True):
     model_cfg = {
         'backbone': 'vit_base_patch8_384',
         'pretrained_backbone': pretrained_backbone,

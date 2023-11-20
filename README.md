@@ -15,7 +15,8 @@ Developed based on the following repos:
 |deeplabv3plus_mobilenet|-|-|-|-|-|
 |deeplabv3plus_xception|swindeeplab_xception|-|-|-|-|
 |-|-|swindeeplab_swin_t|-|-|-|-|
-|-|-|-|segmenter_vit_base|mae_semgemter_vit_base|mae_semgemter_vit_base_deconv|mae_semgemter_vit_base_mask|
+|-|-|-|-|mae_semgemter_vit_base|mae_semgemter_vit_base_deconv|mae_semgemter_vit_base_mask|
+|-|-|-|segmenter_vit_large|-|-|-|
 |-|-|-|-|mae_semgemter_vit_huge|mae_semgemter_vit_huge_deconv|mae_semgemter_vit_huge_mask|
 
 please refer to [network/modeling.py](https://github.com/VainF/DeepLabV3Plus-Pytorch/blob/master/network/modeling.py) for all model entries.
@@ -78,12 +79,12 @@ validation: 1024x2048
 | Model | Oputput Stride/Patch Size | params | FPS | mIoU |
 |:-----:|:-----:|:-----:|:-----:|:-----:|
 | DeepLabV3Plus-MobileNet | 16 | 5.23M | ? | ? |
-| DeepLabV3Plus-Xception | 16 | 30.05M | 45 | ? |
+| DeepLabV3Plus-Xception | 16 | 37.05M | 45 | ? |
 | DeepLabV3Plus-ResNet101 | 16 | 58.75M | 15 | 76.1% |
 | TransDeepLab-SwinT | 16 | ? | ? | ? |
-| Segmenter-ViT_Base | 16 | ? | 5 | 76.1% |
-| MaeSegmenter-ViT_Base | 16 | 86.44M | 3 | 75.3% |
-| MaeSegmenter-ViT_Huge | 16 | 631.59M | ? | ? |
+| Segmenter-ViT_Large | 16 | 322.25M | 5 | 76.1% |
+| MaeSegmenter-ViT_Base | 16 | 89.68M | 3 | 75.3% |
+| MaeSegmenter-ViT_Huge | 16 | 631.03M | ? | ? |
 | MaeSegmenter-ViT_Base-DeConv | 16 | ? | ? | ? |
 | MaeSegmenter-ViT_Base-Mask | 16 | ? | ? | ? |
 
