@@ -78,15 +78,15 @@ validation: 1024x2048
 
 | Model | Oputput Stride/Patch Size | params | FPS | mIoU |
 |:-----:|:-----:|:-----:|:-----:|:-----:|
-| DeepLabV3Plus-MobileNet | 16 | 5.23M | ? | ? |
-| DeepLabV3Plus-Xception | 16 | 37.05M | 45 | ? |
+| DeepLabV3Plus-MobileNet | 16 | 5.23M | 45 | 70.6% |
+| DeepLabV3Plus-Xception | 16 | 37.05M | 45 | 69.3% |
 | DeepLabV3Plus-ResNet101 | 16 | 58.75M | 15 | 76.1% |
 | TransDeepLab-SwinT | 16 | ? | ? | ? |
 | Segmenter-ViT_Large | 16 | 322.25M | 5 | 76.1% |
-| MaeSegmenter-ViT_Base | 16 | 89.68M | 3 | 75.3% |
-| MaeSegmenter-ViT_Huge | 16 | 631.03M | ? | ? |
-| MaeSegmenter-ViT_Base-DeConv | 16 | ? | ? | ? |
-| MaeSegmenter-ViT_Base-Mask | 16 | ? | ? | ? |
+| MaeSegmenter-ViT_Base | 16 | 89.68M | 3 | 74.8% |
+| MaeSegmenter-ViT_Base-Mask | 16 | 97.17M | ? | ? |
+| MaeSegmenter-ViT_Huge | 16 | 631.03M | 1 | 80.1% |
+| MaeSegmenter-ViT_Huge-Mask | 16 | 659.09M | ? | ? |
 
 p.s. FPS is measured based on the time required to process a single sample (1x3x1024x2048) during a forward pass
 
