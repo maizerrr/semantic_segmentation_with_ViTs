@@ -84,9 +84,9 @@ validation: 1024x2048
 | TransDeepLab-SwinT | 16 | ? | ? | ? |
 | Segmenter-ViT_Large | 16 | 322.25M | 5 | 76.1% |
 | MaeSegmenter-ViT_Base | 16 | 89.68M | 3 | 74.8% |
-| MaeSegmenter-ViT_Base-Mask | 16 | 97.17M | ? | ? |
+| MaeSegmenter-ViT_Base-Mask | 16 | 97.17M | 3 | 75.6% |
 | MaeSegmenter-ViT_Huge | 16 | 631.03M | 1 | 80.1% |
-| MaeSegmenter-ViT_Huge-Mask | 16 | 659.09M | ? | ? |
+| MaeSegmenter-ViT_Huge-Mask | 16 | 659.09M | 1 | 80.3% |
 
 p.s. FPS is measured based on the time required to process a single sample (1x3x1024x2048) during a forward pass
 
